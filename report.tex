@@ -1,0 +1,364 @@
+\documentclass[UTF8]{ctexart}
+\ctexset{section={format={\Large\bfseries}}}%一级标题居左
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage[toc,page]{appendix}
+\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}} % 只取章节标题作为标记
+\lhead{}
+\chead{}
+\rhead{\bfseries\leftmark} % 在页眉右侧显示当前章节标题
+\lfoot{}
+\cfoot{\thepage}
+\rfoot{}
+%\renewcommand{\headrulewidth}{0.6pt}    %单线页眉的设置 
+\renewcommand{\footrulewidth}{0.4pt}     %单线页脚的设置 
+%-----------双线页眉的设置  
+\makeatletter 
+\def\headrule{{\if@fancyplain\let\headrulewidth\plainheadrulewidth\fi%
+		\hrule\@height 1.0pt \@width\headwidth\vskip1pt%上面线为1pt粗  
+		\hrule\@height 0.5pt\@width\headwidth  %下面0.5pt粗            
+		\vskip-2\headrulewidth\vskip-4pt}      %两条线的距离1pt        
+		  \vspace{3mm}}     %双线与下面正文之间的垂直间距 
+\makeatother    
+%------------双线页眉的设置            
+\usepackage{booktabs}
+\usepackage{subfig}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{array}%需要该宏包
+\usepackage{diagbox} % 加载宏包
+\usepackage{multirow}
+\usepackage{textcomp}
+\usepackage{indentfirst}%首行缩进宏包
+\usepackage{setspace}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{xcolor} % 用于定义颜色
+\usepackage{listings} % 用于插入代码
+\usepackage{amsthm} % 提供定理类环境（如proposition、proof）
+% 定义“命题”环境
+\theoremstyle{plain}
+\newtheorem{proposition}{命题}
+% --- listings代码样式设置 ---
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    mathescape=true % <--- 添加这一行
+}
+\lstset{style=mystyle}
+% --- listings代码样式设置结束 ---
+
+\usepackage[unicode,colorlinks,linkcolor=black,anchorcolor=black,citecolor=black]{hyperref}
+% 书签中屏蔽数学命令与上标
+\AtBeginDocument{%
+  \pdfstringdefDisableCommands{%
+    \def\varepsilon{epsilon}%
+    \def\mathrm#1{#1}%
+    \def\_{}%
+    \def\^#1{}%
+  }%
+}
+\date{}
+\begin{document}
+\thispagestyle{empty}
+\begin{figure}[tph!]
+	\centering
+	\includegraphics[width=0.7\linewidth]{figure/1}
+\end{figure}
+
+\begin{center}
+	\quad \\
+	\quad \\
+	\quad \\
+	\heiti \fontsize{30}{17} \quad \quad \quad 核反应堆毒物仿真\quad \quad \quad 
+	\quad \\
+	\quad \\
+	\quad \\
+	\quad \\
+	\songti \zihao{2} 作\quad 业\quad 报\quad 告%在此打印论文题目，二号黑体	
+\end{center}
+\vskip 1cm
+
+\begin{quotation}
+	\songti \fontsize{20}{20}
+	\doublespacing
+	\par\setlength\parindent{12em}
+	\qquad
+	\begin{center}
+		{\Large 学\hspace{0.88cm} 院：\underline{\hbox to 58mm{\hfil 工程物理系\hfil}}}
+		\vskip 0.3cm	
+		{\Large 班\hspace{0.88cm} 级：\underline{\hbox to 58mm{\hfil 核32班\hfil}}}
+		\vskip 0.3cm
+		{\Large 姓\hspace{0.88cm} 名：\underline{\hbox to 58mm{\hfil 王心锐\hfil}}}
+		\vskip 0.3cm	
+		{\Large 学\hspace{0.88cm} 号：\underline{\hbox to 58mm{\hfil 2023011182\hfil}}}
+		\vskip 0.3cm	
+		{\Large 教\hspace{0.88cm} 师：\underline{\hbox to 58mm{\hfil 余纲林\hfil}}}
+    \end{center}	
+    \vskip 3cm
+    \begin{flushright}
+		2025\;年\;12\;月\;26\;日
+	\end{flushright}
+	
+\end{quotation}
+\newpage
+\thispagestyle{empty}
+\tableofcontents
+\newpage
+
+\setcounter{page}{1}
+\thispagestyle{fancy}	
+
+% === 摘要 ===
+\begin{abstract}
+本报告介绍了一套用于反应堆裂变产物中毒的综合仿真系统，重点研究碘-氙（Iodine-Xenon）和钷-钐（Promethium-Samarium）的瞬态变化。通过构建 Bateman 微分方程组并采用 LSODA 数值算法，该系统能够准确求解在快速功率变化（如紧急停堆 Scram）期间遇到的刚性常微分方程（Stiff ODEs）。在反应性计算方面，软件采用了基于有效增殖因数 ($k_{eff}$) 的物理模型，而非简单的线性截面映射，从而更准确地反映了毒物引入的负反应性。代码采用 Python 实现，并通过 Streamlit 框架进行部署，提供了一个基于 Web 的交互式界面，用于分析诸如“碘坑（Iodine Pit）”等对安全至关重要的现象。
+\end{abstract}
+% === 正文开始 ===
+
+\section{物理情境与数学建模}
+
+在核反应堆运行中，裂变产物 $^{135}I$、$^{135}Xe$、$^{149}Pm$ 和 $^{149}Sm$ 对反应性有显著影响。由于 $^{135}Xe$ 和 $^{149}Sm$ 具有极大的热中子吸收截面，它们被归类为“反应堆毒物”。
+
+\subsection{碘-氙 (I-Xe) 系统动力学}
+碘-135 是主要的裂变产物前体，衰变为氙-135。氙-135 可以通过放射性衰变消失，也可以通过中子俘获（嬗变为稳定的 $^{136}Xe$）消失。
+
+系统由以下 Bateman 方程控制：
+
+\begin{equation}
+\begin{cases} 
+\frac{dI(t)}{dt} = \gamma_I \Sigma_f \phi(t) - \lambda_I I(t) \\
+\frac{dX(t)}{dt} = \gamma_X \Sigma_f \phi(t) + \lambda_I I(t) - \lambda_X X(t) - \sigma_a^X \phi(t) X(t) 
+\end{cases}
+\end{equation}
+
+其中 $\gamma$ 代表裂变产额，$\lambda$ 是衰变常数，$\sigma_a^X$ 是微观吸收截面，$\phi(t)$ 是随时间变化的中子通量。
+
+\subsection{钷-钐 (Pm-Sm) 系统动力学}
+钷-149 衰变为钐-149。与氙不同，钐-149 是稳定的且不发生衰变；它仅通过中子吸收被移除。
+
+\begin{equation}
+\begin{cases} 
+\frac{dP(t)}{dt} = \gamma_P \Sigma_f \phi(t) - \lambda_P P(t) \\
+\frac{dS(t)}{dt} = \lambda_P P(t) - \sigma_a^S \phi(t) S(t) 
+\end{cases}
+\end{equation}
+
+\section{算法分析与选择}
+
+\subsection{数值特性：刚性问题}
+第1节推导出的 ODE 系统构成了一个初值问题 (IVP)。反应堆动力学耦合燃耗计算时的一个关键特性是\textbf{刚性 (Stiffness)}。
+
+从数学上讲，当系统的雅可比矩阵 (Jacobian matrix) $J$ 的特征值 $\lambda_i$ 实部差异巨大时，就会产生刚性。刚性比 $S$ 定义为：
+\begin{equation}
+S = \frac{\max |\text{Re}(\lambda)|}{\min |\text{Re}(\lambda)|} \gg 1
+\end{equation}
+在我们的背景下，瞬发中子通量的调整发生在毫秒级（对于缓发中子则是秒级），而核素衰变发生在数小时级（$T_{1/2}^{Xe} \approx 9.1h$）。 这种巨大的时间尺度差异迫使标准的显式求解器（如 Runge-Kutta 4）必须采用极小的时间步长以维持稳定性，因此必须使用专用的求解器。
+
+\subsection{LSODA 求解器架构}
+我们使用了 \texttt{scipy.integrate.odeint} 封装的 LSODA (Livermore Solver for Ordinary Differential Equations) 算法。LSODA 的独特之处在于它能够动态监测解的行为并自动切换策略。
+
+\subsubsection{动态方法切换}
+LSODA 根据解的局部行为选择积分方法：
+
+\begin{enumerate}
+    \item \textbf{非刚性区 (Adams-Moulton 方法):} \\
+    当解是平滑的（例如平衡态运行）时，LSODA 使用 Adams-Moulton 线性多步法。
+    \begin{itemize}
+        \item \textbf{技术:} 采用预测-校正 (Predictor-Corrector) 格式。
+        \item \textbf{阶数:} 1 到 12 阶可变。
+        \item \textbf{优势:} 高精度且每步计算成本低，因为它避免了复杂的矩阵求逆。
+    \end{itemize}
+    
+    \item \textbf{刚性区 (BDF 方法):} \\
+    当发生快速瞬态（例如紧急停堆后瞬间）时，LSODA 切换到 反向微分公式 (BDF)，也称为 Gear 方法。
+    \begin{itemize}
+        \item \textbf{技术:} 隐式多步法 (Implicit multi-step method)。
+        \item \textbf{阶数:} 1 到 5 阶可变。
+        \item \textbf{稳定性:} BDF 方法具有 \textbf{A-稳定性} (或刚性稳定性)，允许求解器在解快速衰减时仍能采用较大的时间步长而不发生数值振荡。
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{雅可比矩阵计算}
+在刚性 (BDF) 阶段，该方法的隐式特性要求在每个时间步求解非线性代数方程组。这涉及 \textbf{雅可比矩阵 (Jacobian Matrix)} $J = \frac{\partial \mathbf{f}}{\partial \mathbf{y}}$：
+
+\begin{equation}
+J = \begin{bmatrix}
+\frac{\partial \dot{I}}{\partial I} & \frac{\partial \dot{I}}{\partial X} \\
+\frac{\partial \dot{X}}{\partial I} & \frac{\partial \dot{X}}{\partial X}
+\end{bmatrix}
+\end{equation}
+
+LSODA 内部通过有限差分近似该矩阵，从而实现解隐式方程所需的牛顿-拉夫逊 (Newton-Raphson) 迭代。
+
+\subsection{反应性物理模型与标定}
+为了更真实地反映堆芯物理特性，本软件废弃了传统的线性截面映射法，转而采用基于有效增殖因数 ($k_{eff}$) 的计算模型。
+
+\subsubsection{有效增殖因数定义}
+$k_{eff}$ 定义为中子产生率与总消失率（吸收加泄漏）之比。在单点堆模型中，其瞬态表达式为：
+\begin{equation}
+k_{eff}(t) = \frac{\nu \Sigma_f}{\Sigma_{struct} + \Sigma_{Xe}(t) + \Sigma_{Sm}(t)}
+\end{equation}
+其中：
+\begin{itemize}
+    \item $\nu$: 每次裂变产生的平均中子数（U-235 热裂变取 2.43）。
+    \item $\Sigma_f$: 宏观裂变截面。
+    \item $\Sigma_{struct}$: 代表结构材料、冷却剂及泄漏的等效本底宏观吸收截面。
+\end{itemize}
+
+\subsubsection{基准态反推标定}
+模型引入了“基准态校准”步骤：假设反应堆在满功率平衡态下通过控制手段维持临界 ($k_{eff}=1.0$)。基于此物理事实，反推未知的本底截面 $\Sigma_{struct}$：
+\begin{equation}
+\Sigma_{struct} = \nu \Sigma_f - (\Sigma_{Xe}^{eq} + \Sigma_{Sm}^{eq})
+\end{equation}
+其中 $\Sigma_{Xe}^{eq}$ 和 $\Sigma_{Sm}^{eq}$ 是根据满功率通量计算出的平衡态毒物截面。这一步骤确立了仿真的物理零点。
+
+\subsubsection{反应性价值计算}
+任意时刻的反应性 $\rho$ (单位：pcm) 由下式计算，体现了毒物浓度与反应性之间的非线性关系：
+\begin{equation}
+\rho(t) = \frac{k_{eff}(t) - 1}{k_{eff}(t)} \times 10^5
+\end{equation}
+
+\section{软件设计与功能实现}
+
+软件采用模块化架构以确保可维护性和可扩展性。核心模块详见表 \ref{tab:modules}。
+
+\begin{table}[H]
+    \centering
+    \caption{软件模块架构}
+    \label{tab:modules}
+    \begin{tabular}{@{}lp{9cm}@{}}
+        \toprule
+        \textbf{模块名称} & \textbf{核心功能} \\ 
+        \midrule
+        \texttt{ReactorConstants} & 定义物理常数（衰变常数 $\lambda$，产额 $\gamma$，截面 $\sigma$，平均中子数 $\nu$）。 \\
+        \midrule
+        \texttt{poison\_derivatives} & 封装核心 Bateman 微分方程组（公式 1 和 2）。 \\
+        \midrule
+        \texttt{simulate\_transient} & 驱动函数，执行时间步进并调用 ODE 求解器。 \\
+        \midrule
+        \texttt{plot\_system\_response} & 可视化模块，使用双 Y 轴展示前体核与毒物之间的耦合关系，并自动标注反应性极值（Min/Max）。 \\
+        \midrule
+        \texttt{Streamlit Interface} & 实现交互式参数输入、场景选择和 Web 渲染。 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{部署与网络实现}
+
+为了满足“网络实现和用户友好性”的要求，应用程序基于 \textbf{Streamlit} 框架构建。
+
+\subsection{交互性}
+利用 \texttt{st.sidebar}，界面提供了预设场景：
+\begin{itemize}
+    \item \textbf{冷态启动:} 模拟从零开始的积累过程。
+    \item \textbf{停堆 (Scram):} 分析碘坑效应。
+    \item \textbf{台阶变化:} 分析负荷跟踪期间的瞬态。
+\end{itemize}
+
+\subsection{网络部署策略}
+\begin{enumerate}
+    \item \textbf{本地执行：} 可以通过命令行在本地启动服务：
+    \begin{lstlisting}[language=bash]
+    streamlit run app.py
+    \end{lstlisting}
+    
+    \item \textbf{云端部署：} 源代码兼容 \href{https://streamlit.io/cloud}{\textbf{Streamlit Cloud}}。这允许将仿真托管在远程服务器上，使用户能够通过浏览器直接访问，可通过以下链接访问：\\
+    \url{https://reactor-sim.streamlit.app/}
+    
+    \item \textbf{开源代码：} 本项目的完整源代码已托管于 GitHub，可通过以下链接访问：\\
+    \url{https://github.com/2023011182/reactor-sim/}
+\end{enumerate}
+
+\section{仿真结果与结论}
+
+本章针对三种典型反应堆运行工况进行了瞬态仿真，重点分析了生成项与消失项之间的动态竞争机制，及其对反应性变化的深层物理影响。
+
+\subsection{工况一：新堆冷态启动}
+
+\textbf{场景描述：}反应堆从无毒物状态（新堆芯）迅速提升至满功率（100\%）并维持运行。
+
+\subsubsection{物理过程深度解析}
+
+\paragraph{初始阶段 ($T=0 \sim 10h$)：前体核积累主导}
+随着裂变反应的开始，前体核 I-135 直接由裂变产生，生成率为 $\gamma_I \Sigma_f \phi$。由于其产额较高，积累速度极快。然而，此时 Xe-135 的浓度极低，且增长曲线表现出明显的\textbf{滞后 (Lag)}。这是因为 Xe-135 主要来源于 I-135 的 $\beta$ 衰变，在启动初期，I-135 尚未积累足够的存量来通过衰变大量补给 Xe-135。
+
+\paragraph{中间阶段 ($T=10h \sim 40h$)：趋向平衡}
+随着 I-135 浓度逐渐接近饱和，其衰变生成 Xe-135 的速率达到最大值。此时，Xe-135 的消失项（主要是中子吸收 $\sigma_a \phi X$）开始逐渐增强并与生成项抗衡。
+
+\textbf{反应性响应：} 随着 Xe-135 宏观截面的增大，有效增殖因数 $k_{eff}$ 下降，引入负反应性。反应性曲线从 $0$ (基准) 开始逐渐下降（变得更负）。
+
+\paragraph{平衡阶段 ($T > 50h$)：饱和效应}
+系统进入动态平衡，I-135 和 Xe-135 的浓度不再随时间变化。此时满足如下平衡关系：
+\begin{equation}
+\text{裂变产出率} \approx \text{I衰变率} \approx (\text{Xe吸收率} + \text{Xe衰变率})
+\end{equation}
+
+\textbf{Pm-Sm 体系差异：} 与 I-Xe 体系显著不同，由于 Pm-149 的半衰期较长（约53小时），Sm-149 的积累要慢得多，通常需要约 2-3 周才能达到平衡。值得注意的是，\textbf{平衡钐浓度与中子通量水平无关}，仅取决于核截面参数与产额比。
+
+\subsection{工况二：满功率停堆与碘坑效应}
+
+\textbf{场景描述：}反应堆在满功率平衡态运行后，瞬间停堆（功率降为 0\%）。这是核工程中安全性分析的关键瞬态。
+
+
+\subsubsection{物理过程深度解析}
+
+\paragraph{停堆瞬间 ($T=0$)：消失机制崩溃}
+在满功率运行时，Xe-135 的主要消失途径是中子吸收（约占 90\% 以上）。停堆瞬间，中子通量 $\phi \to 0$，导致这一主导消失项立刻归零。此时，Xe-135 仅剩的消失途径为自发衰变（$T_{1/2} \approx 9.1h$），其效率远低于中子吸收。
+另一方面，生成项并未停止。虽然裂变停止了，但堆内积累的大量 I-135 继续以 6.6小时的半衰期衰变，持续补给 Xe-135。
+
+\paragraph{碘坑形成期 ($T=0 \sim 10h$)：净增量}
+由于此时的生成速率大于消失速率（$\lambda_I I > \lambda_X X$），Xe-135 的浓度\textbf{不降反升}。
+\textbf{峰值特性 (Min 点)：} 反应性曲线出现极小值，即毒物浓度达到最大值。该峰值通常出现在停堆后 \textbf{9-11 小时}。此时引入的负反应性极大（例如 -3000 pcm 至 -4000 pcm），往往超过了控制棒的调节能力。若此时试图重启反应堆，将无法达到临界状态，这一时间窗口被称为\textbf{“死时间” (Dead Time)}。
+
+\paragraph{衰减恢复期 ($T > 12h$)}
+随着前体核 I-135 逐渐衰变耗尽，源头枯竭，Xe-135 的自然衰变开始占据主导地位，浓度缓慢下降，反应性才开始逐渐回升。
+
+\paragraph{钐的特殊行为：永久中毒}
+停堆后，Pm-149 继续衰变为 Sm-149。由于 Sm-149 是稳定核素（无衰变项），且因 $\phi=0$ 无中子吸收项，其浓度会持续上升并最终稳定在一个比满功率运行更高的水平（由剩余的 Pm 全部转化而来）。
+这意味着停堆后的堆芯总是比停堆前“更脏”（反应性更低），这种\textbf{永久中毒}只能通过重新启动反应堆并恢复中子通量将其“烧掉”来消除。
+
+\subsection{工况三：功率台阶变化}
+
+\textbf{场景描述：}功率从 100\% 阶跃降至 50\%（或更低），运行一段时间后再恢复至满功率。
+
+
+\subsubsection{物理过程深度解析}
+
+\paragraph{降功率瞬间 ($100\% \to 50\%$)：类碘坑效应}
+中子通量 $\phi$ 减半意味着 Xe-135 的“燃烧”能力瞬间减半。然而，此时 I-135 的浓度仍处于 100\% 功率对应的高水平。
+\textbf{瞬态峰值：} 短时间内生成速率大于消失速率，导致 Xe-135 浓度先上升（出现一个类似于碘坑的峰值，但幅度较小），引入额外的负反应性。随后，随着 I-135 浓度随裂变率下降而降低，Xe-135 最终会回落并稳定在 50\% 功率对应的新平衡点。
+
+\paragraph{升功率瞬间 ($50\% \to 100\%$)：氙振荡风险}
+当功率提升时，中子通量 $\phi$ 倍增，对 Xe-135 的吸收（燃烧）速率剧增。
+\textbf{瞬态低谷：} 现存的 Xe-135 被迅速“烧掉”，浓度急剧下降，导致反应性显著上升（变得更正）。这要求操纵员必须迅速插入控制棒来补偿正反应性，防止功率失控。随后，随着高功率带来的高裂变率，I-135 重新积累，进而带动 Xe-135 浓度滞后回升至 100\% 水平。
+
+\paragraph{钐的反向行为}
+与氙的行为相反：
+\begin{itemize}
+    \item \textbf{降功率时：} Sm 浓度会\textbf{上升}。因为 Pm 的衰变补给暂时大于减少后的中子吸收消耗。
+    \item \textbf{升功率时：} Sm 浓度会\textbf{下降}。因为增强的中子通量加速了 Sm 的消耗。
+\end{itemize}
+这种变化的时间尺度通常比 Xe 慢得多，且幅度较小，但在精确的反应性控制中仍需考虑。
+\end{document}

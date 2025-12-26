@@ -23,6 +23,9 @@ class ReactorConstants:
     
     # 宏观裂变截面 (cm^-1, 假设值)
     SIGMA_F = 0.098 
+    
+    # [新增] 每次裂变产生的平均中子数 (U-235 热裂变典型值)
+    NU = 2.43
 
 # ==========================================
 # 2. 物理模型核心：Bateman 方程组
@@ -86,7 +89,7 @@ def simulate_transient(power_history, initial_state):
     return np.concatenate(time_points), np.concatenate(results)
 
 # ==========================================
-# 4. 辅助绘图函数
+# 4. 辅助绘图函数 (已修改：同时标注极大值和极小值)
 # ==========================================
 def plot_system_response(time_h, power_x, power_y, 
                           precursor_conc, daughter_conc, worth, 
@@ -125,19 +128,37 @@ def plot_system_response(time_h, power_x, power_y,
     ax3.fill_between(time_h, worth, 0, color='darkred', alpha=0.1)
     ax3.grid(True, linestyle='--', alpha=0.6)
     
-    # 自动标注峰值（最负反应性）
-    min_idx = np.argmin(worth) 
-    peak_val = worth[min_idx]
-    peak_time = time_h[min_idx]
+    # ================= 修改部分：标注最大值与最小值 =================
     
-    # 仅当峰值显著时标注
-    if peak_val < -100:
-        ax3.annotate(f'Max Poison: {peak_val:.0f} pcm\nT={peak_time:.1f}h', 
-                     xy=(peak_time, peak_val), 
-                     xytext=(0, 40),            
+    # 1. 寻找最小值 (最负反应性，即毒物峰值)
+    min_idx = np.argmin(worth) 
+    min_val = worth[min_idx]
+    min_time = time_h[min_idx]
+    
+    # 标注最小值 (Text 上浮)
+    ax3.annotate(f'Min: {min_val:.0f}\nT={min_time:.1f}h', 
+                 xy=(min_time, min_val), 
+                 xytext=(0, 40),            
+                 textcoords='offset points', 
+                 ha='center', va='bottom',
+                 arrowprops=dict(facecolor='blue', arrowstyle='->', connectionstyle='arc3'),
+                 fontsize=9, color='blue', fontweight='bold') 
+
+    # 2. 寻找最大值 (最正/接近零反应性，即毒物低谷)
+    max_idx = np.argmax(worth)
+    max_val = worth[max_idx]
+    max_time = time_h[max_idx]
+
+    # 标注最大值 (Text 下沉)，仅当最大值点与最小值点不同时标注
+    if max_idx != min_idx:
+        ax3.annotate(f'Max: {max_val:.0f}\nT={max_time:.1f}h', 
+                     xy=(max_time, max_val), 
+                     xytext=(0, -40),            
                      textcoords='offset points', 
-                     ha='center',
-                     arrowprops=dict(facecolor='black', arrowstyle='->', connectionstyle='arc3')) 
+                     ha='center', va='top',
+                     arrowprops=dict(facecolor='red', arrowstyle='->', connectionstyle='arc3'),
+                     fontsize=9, color='red', fontweight='bold')
+    # =============================================================
 
     plt.tight_layout()
     return fig
@@ -148,7 +169,7 @@ def plot_system_response(time_h, power_x, power_y,
 def main():
     st.set_page_config(page_title="核反应堆毒物仿真 Pro", layout="wide", page_icon="⚛️")
     
-    st.title("⚛️ 核反应堆裂变产物瞬态分析系统")
+    st.title("⚛️ 核反应堆毒物仿真系统")
     st.markdown("---")
     
     # --- Session State 辅助函数 (用于滑块与数字框同步) ---
@@ -247,14 +268,16 @@ def main():
         y0 = [0.0, 0.0, 0.0, 0.0]
         const = ReactorConstants()
         
+        # 预先计算满功率平衡值（用于后续校准和初始值）
+        phi_ref = FULL_POWER_FLUX
+        I_eq_ref = const.GAMMA_I * const.SIGMA_F * phi_ref / const.LAMBDA_I
+        X_eq_ref = (const.GAMMA_X + const.GAMMA_I) * const.SIGMA_F * phi_ref / (const.LAMBDA_X + const.SIGMA_A_X * phi_ref)
+        P_eq_ref = const.GAMMA_PM * const.SIGMA_F * phi_ref / const.LAMBDA_PM
+        S_eq_ref = const.GAMMA_PM * const.SIGMA_F / const.SIGMA_A_S
+        
         if init_mode == "平衡态 (基于满功率)":
-            phi = FULL_POWER_FLUX
-            I_eq = const.GAMMA_I * const.SIGMA_F * phi / const.LAMBDA_I
-            X_eq = (const.GAMMA_X + const.GAMMA_I) * const.SIGMA_F * phi / (const.LAMBDA_X + const.SIGMA_A_X * phi)
-            P_eq = const.GAMMA_PM * const.SIGMA_F * phi / const.LAMBDA_PM
-            S_eq = const.GAMMA_PM * const.SIGMA_F / const.SIGMA_A_S 
-            y0 = [I_eq, X_eq, P_eq, S_eq]
-            st.success(f"已加载平衡态:\nXe: {X_eq:.2e}\nSm: {S_eq:.2e}")
+            y0 = [I_eq_ref, X_eq_ref, P_eq_ref, S_eq_ref]
+            st.success(f"已加载平衡态:\nXe: {X_eq_ref:.2e}\nSm: {S_eq_ref:.2e}")
             
         elif init_mode == "自定义数值":
             st.markdown("初始原子数密度 (atoms/cm³):")
@@ -267,7 +290,7 @@ def main():
             ]
 
     # --- 主界面：运行与结果展示 ---
-    if st.button("🚀 开始计算 (Run Simulation)", type="primary", width="stretch"):
+    if st.button("🚀 开始计算", type="primary", width="stretch"):
         
         # 1. 运行数值模拟
         t_arr, y_arr = simulate_transient(stages_input, y0)
@@ -279,18 +302,27 @@ def main():
         P_conc = y_arr[:, 2]
         S_conc = y_arr[:, 3]
         
-        # 3. 反应性价值计算 (估算 pcm)
-        Sigma_Xe = X_conc * const.SIGMA_A_X
-        Sigma_Sm = S_conc * const.SIGMA_A_S
+        # 3. 反应性价值计算 
         
-        # 计算满功率参考值用于标定 (假设满功率平衡氙价值约 -2800 pcm)
-        phi_ref = FULL_POWER_FLUX
-        X_eq_ref = (const.GAMMA_X + const.GAMMA_I) * const.SIGMA_F * phi_ref / (const.LAMBDA_X + const.SIGMA_A_X * phi_ref)
-        Sigma_Xe_ref = X_eq_ref * const.SIGMA_A_X
-        pcm_scaling = -2800.0 / Sigma_Xe_ref if Sigma_Xe_ref > 0 else 0
+        # (a) 计算中子产生项 (Macroscopic Production Cross Section)
+        Macroscopic_Production = const.NU * const.SIGMA_F
         
-        Rho_Xe = Sigma_Xe * pcm_scaling
-        Rho_Sm = Sigma_Sm * pcm_scaling 
+        # (b) 计算基准状态下的本底吸收 (Calibration)
+        Sigma_Xe_ref_abs = X_eq_ref * const.SIGMA_A_X
+        Sigma_Sm_ref_abs = S_eq_ref * const.SIGMA_A_S
+        Sigma_structure = Macroscopic_Production - (Sigma_Xe_ref_abs + Sigma_Sm_ref_abs)
+        
+        # (c) 计算瞬态过程中的 k_eff 和 反应性
+        Sigma_Xe_t = X_conc * const.SIGMA_A_X
+        Sigma_Sm_t = S_conc * const.SIGMA_A_S
+        
+        # 计算针对单一毒物的 k_eff (为了绘图解耦，采用控制变量法)
+        k_Xe_only = Macroscopic_Production / (Sigma_structure + Sigma_Xe_t + Sigma_Sm_ref_abs)
+        k_Sm_only = Macroscopic_Production / (Sigma_structure + Sigma_Xe_ref_abs + Sigma_Sm_t)
+        
+        # 转换为反应性 rho = (k-1)/k * 1e5 (pcm)
+        Rho_Xe = ((k_Xe_only - 1.0) / k_Xe_only) * 1e5
+        Rho_Sm = ((k_Sm_only - 1.0) / k_Sm_only) * 1e5
 
         # 4. 构建功率绘图数据 (使其为台阶状)
         power_x = [0]
@@ -319,30 +351,34 @@ def main():
             )
             st.pyplot(fig1)
 
-            # --- 动态物理解释逻辑 ---
+            # --- 动态物理解释逻辑---
             st.markdown("### 💡 物理现象深度解析")
+            
             if "启动" in scenario:
-                st.info("""
+                st.info(r"""
                 **工况：新堆冷态启动 (Startup)**
-                1. **积累过程**：初始时刻 I-135 和 Xe-135 均为 0。随着功率提升，I-135 (前体核) 首先由裂变迅速积累。
-                2. **滞后效应**：Xe-135 的积累滞后于 I-135，因为它的主要来源是 I-135 的衰变。
-                3. **平衡态**：约 40-50 小时后，Xe-135 的生成（裂变+I衰变）与消失（中子吸收+衰变）达到平衡，反应性价值趋于稳定。
+                1.  **前体核主导 (T < 10h)**：启动初期，I-135 直接由裂变产生 ($\gamma_I \Sigma_f \phi$)，积累迅速。而 Xe-135 主要源于 I-135 的衰变，因此 Xe 的积累表现出明显的 **滞后性 (Lag)**。
+                2.  **趋向平衡**：随着 I-135 浓度饱和，其衰变补给率达到最大。Xe-135 的生成项与其消失项（主要是中子吸收 $\sigma_a \phi X$）逐渐抗衡。
+                3.  **饱和效应**：最终达到 $dI/dt=0$ 和 $dX/dt=0$ 的动态平衡点，反应性固定在平衡氙毒水平。
                 """)
+            
             elif "停堆" in scenario:
                 st.warning(r"""
-                **工况：满功率停堆 - 碘坑效应 (Iodine Pit)** 
-                1. **消失项归零**：停堆瞬间，中子通量 $\phi \to 0$，Xe-135 的主要消失途径（中子吸收 $\sigma_a \phi X$）立刻停止。
-                2. **生成项持续**：堆内积累的大量 I-135 继续以 6.6 小时的半衰期衰变为 Xe-135。
-                3. **结果**：生成速率 > 消失速率（仅剩衰变），导致 Xe-135 浓度不降反升，在停堆后 **9-12小时** 出现峰值（即“碘坑”），随后才随时间衰减。
+                **工况：满功率停堆 - 碘坑效应 (Iodine Pit)**
+                1.  **消失机制崩溃**：停堆瞬间，通量 $\phi \to 0$，Xe-135 的主导消失项（中子吸收，占运行时 >90%）立刻归零。仅剩缓慢的自发衰变（$T_{1/2}=9.1h$）。
+                2.  **生成项持续**：堆内积累的大量 I-135 继续以 $T_{1/2}=6.6h$ 衰变为 Xe-135。
+                3.  **净增量 (Min点)**：由于 **来源(I衰变) > 去路(Xe衰变)**，Xe-135 浓度不降反升，在停堆后 **9-11小时** 达到峰值（死时间窗口），随后因 I-135 耗尽才开始下降。
                 """)
+            
             elif "台阶" in scenario:
-                st.info("""
+                st.info(r"""
                 **工况：功率台阶变化 (Step Change)**
-                1. **瞬态超调**：功率下降瞬间，中子吸收能力减弱，但 I-135 的积累量仍处于高功率水平，导致 Xe-135 浓度短时间内先上升。
-                2. **趋向新平衡**：随着 I-135 浓度随裂变率降低而下降，Xe-135 最终会稳定在对应低功率的新平衡点。
+                1.  **降功率**：通量减少导致 Xe 的“燃烧”能力减少，而 I-135 的存量仍处于高位。生成 > 消耗，导致 Xe 浓度暂时上升（**负反应性引入**）。
+                2.  **升功率**：通量增加导致 Xe 被剧烈“燃烧”。消耗 > 生成，导致 Xe 浓度急剧下降（**正反应性引入**），需防范瞬态超调。
                 """)
+            
             else:
-                st.info("当前为自定义输入模式，请观察曲线中生成项（I衰变）与消失项（吸收+衰变）的竞争关系。")
+                st.info("自定义模式分析：请重点观察曲线中【裂变产出/衰变补给】与【中子吸收/自发衰变】的消长关系。")
 
         # ==================================
         # Tab 2: 钷-钐 系统及动态物理解释
@@ -358,30 +394,34 @@ def main():
             )
             st.pyplot(fig2)
 
-            # --- 动态物理解释逻辑 ---
+            # --- 动态物理解释逻辑 (已修复：使用 r"" 原生字符串) ---
             st.markdown("### 💡 物理现象深度解析")
+            
             if "启动" in scenario:
-                st.info("""
+                st.info(r"""
                 **工况：新堆冷态启动**
-                1. **长周期积累**：Pm-149 和 Sm-149 达到平衡的时间比碘-氙体系长得多（数周时间）。
-                2. **平衡特性**：Sm-149 是稳定核素（不衰变）。值得注意的是，**平衡钐浓度与中子通量大小无关**，仅取决于核截面参数。
+                1.  **长周期积累**：由于 Pm-149 半衰期较长 (53h)，Sm-149 达到平衡需约 3 周时间。
+                2.  **平衡特性**：Sm-149 是稳定核素。根据平衡方程，其平衡浓度 $S_{eq}$ 仅取决于裂变产额和截面比值，**与中子通量大小无关**。
                 """)
+            
             elif "停堆" in scenario:
                 st.error(r"""
-                **工况：满功率停堆 - 停堆后钐峰**
-                1. **只增不减**：停堆后，Sm-149 的中子吸收项消失（$\sigma_a \phi S = 0$），即不再被“烧掉”。
-                2. **持续积累**：Pm-149 继续衰变补充 Sm-149，导致 Sm-149 浓度上升至比运行水平更高的峰值。
-                3. **永久性**：与 Xe-135 不同，Sm-149 是稳定的。除非重新启动反应堆将其烧掉，否则**它将永久维持在这个高浓度水平**。
+                **工况：满功率停堆 - 永久中毒**
+                1.  **只增不减**：停堆后，Sm-149 的唯一消失途径（中子吸收 $\sigma_a \phi S$）消失。
+                2.  **峰值机理**：现存的 Pm-149 全部衰变为 Sm-149，导致 Sm 浓度上升至比运行水平更高的峰值。
+                3.  **永久性**：由于 Sm-149 不衰变，该高浓度将**永久保持**，直到下次开堆产生中子将其“烧掉”。
                 """)
+            
             elif "台阶" in scenario:
-                st.info("""
-                **工况：功率台阶变化**
-                1. **过渡过程**：功率下降初期，由于 Pm-149 的积累存量，Sm-149 浓度会暂时上升。
-                2. **最终状态**：长期来看，Sm-149 会回归到与之前几乎相同的平衡值（因为平衡钐浓度与功率水平无关）。
+                st.info(r"""
+                **工况：功率台阶变化 (与 Xe 相反)**
+                1.  **降功率**：中子吸收减弱，Pm 衰变补给占优，导致 Sm 浓度**上升**。
+                2.  **升功率**：中子吸收增强，加速消耗 Sm，导致 Sm 浓度**下降**。
+                *注：Sm 的瞬态变化极其缓慢，通常被视为长期反应性亏损的变化。*
                 """)
+            
             else:
-                st.info("自定义模式分析：注意观察 Sm-149 作为稳定毒物的积累特性（只通过中子吸收消失）。")
-
+                st.info("自定义模式分析：注意观察 Sm-149 作为【稳定毒物】的积分积累特性。")
         # ==================================
         # Tab 3: 原始数据
         # ==================================

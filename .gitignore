@@ -1,0 +1,15 @@
+# LaTeX 编译产生的临时文件
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.dvi
+*.bbl
+*.blg
+
+# 操作系统生成的缩略图文件
+Thumbs.db
+.DS_Store

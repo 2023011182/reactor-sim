@@ -1,4 +1,4 @@
-# ⚛️ 核反应堆毒物仿真 Pro (Nuclear Reactor Poison Simulation Pro)
+# ⚛️ 核反应堆毒物仿真 Pro 
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://streamlit.io)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
@@ -95,7 +95,8 @@ $$
 欢迎提交 Pull Request 或 Issue！如果您发现物理参数有误或有更好的算法优化建议，请随时联系。
 
 ## 📄 许可证 (License)
-本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件。
+本项目采用 MIT 许可证 
+详情请参阅 [LICENSE](LICENSE) 文件
 
 ---
 Created with ❤️ by [Xinrui Wang]
