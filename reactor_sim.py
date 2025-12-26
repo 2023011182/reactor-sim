@@ -89,7 +89,7 @@ def simulate_transient(power_history, initial_state):
     return np.concatenate(time_points), np.concatenate(results)
 
 # ==========================================
-# 4. 辅助绘图函数 (核心修改区域)
+# 4. 辅助绘图函数
 # ==========================================
 def plot_system_response(time_h, power_x, power_y, 
                           precursor_conc, daughter_conc, worth, 
@@ -128,8 +128,7 @@ def plot_system_response(time_h, power_x, power_y,
     ax3.fill_between(time_h, worth, 0, color='darkred', alpha=0.1)
     ax3.grid(True, linestyle='--', alpha=0.6)
     
-    # ================= 核心修改：智能峰值标注逻辑 =================
-    
+    # === 标注最大值与最小值 ===
     # 1. 寻找最小值 (Min, 最负反应性，通常是毒物峰值)
     # 逻辑：全局最小值
     min_idx = np.argmin(worth) 
