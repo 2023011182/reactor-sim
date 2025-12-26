@@ -89,7 +89,7 @@ def simulate_transient(power_history, initial_state):
     return np.concatenate(time_points), np.concatenate(results)
 
 # ==========================================
-# 4. 辅助绘图函数 (已修改：同时标注极大值和极小值)
+# 4. 辅助绘图函数 (核心修改区域)
 # ==========================================
 def plot_system_response(time_h, power_x, power_y, 
                           precursor_conc, daughter_conc, worth, 
@@ -128,14 +128,15 @@ def plot_system_response(time_h, power_x, power_y,
     ax3.fill_between(time_h, worth, 0, color='darkred', alpha=0.1)
     ax3.grid(True, linestyle='--', alpha=0.6)
     
-    # ================= 修改部分：标注最大值与最小值 =================
+    # ================= 核心修改：智能峰值标注逻辑 =================
     
-    # 1. 寻找最小值 (最负反应性，即毒物峰值)
+    # 1. 寻找最小值 (Min, 最负反应性，通常是毒物峰值)
+    # 逻辑：全局最小值
     min_idx = np.argmin(worth) 
     min_val = worth[min_idx]
     min_time = time_h[min_idx]
     
-    # 标注最小值 (Text 上浮)
+    # 标注最小值 (蓝色，文字上浮)
     ax3.annotate(f'Min: {min_val:.0f}\nT={min_time:.1f}h', 
                  xy=(min_time, min_val), 
                  xytext=(0, 40),            
@@ -144,12 +145,35 @@ def plot_system_response(time_h, power_x, power_y,
                  arrowprops=dict(facecolor='blue', arrowstyle='->', connectionstyle='arc3'),
                  fontsize=9, color='blue', fontweight='bold') 
 
-    # 2. 寻找最大值 (最正/接近零反应性，即毒物低谷)
-    max_idx = np.argmax(worth)
+    # 2. 寻找最大值 (Max, 逻辑修改：寻找“先增大后减小”的局部峰值，排除初始点)
+    max_idx = -1
+    
+    # 只有当数据点足够多时才进行峰值搜索
+    if len(worth) > 5:
+        # 构建“局部极大值”掩码: 比左边大 AND 比右边大
+        # worth[1:-1] 表示去除头尾的中间段
+        is_local_peak = (worth[1:-1] > worth[:-2]) & (worth[1:-1] > worth[2:])
+        
+        # 获取原数组中的索引 (因为切片是从1开始的，所以要+1)
+        peak_indices = np.where(is_local_peak)[0] + 1
+        
+        if len(peak_indices) > 0:
+            # 如果存在局部峰值 (先增后减)，取其中数值最大的那个
+            peak_vals = worth[peak_indices]
+            best_peak_rel_idx = np.argmax(peak_vals)
+            max_idx = peak_indices[best_peak_rel_idx]
+        else:
+            # 如果没有出现“先增后减”的形态（例如单调下降或单调上升）
+            # 退而求其次，找除了第0点之外的最大值
+            max_idx = np.argmax(worth[1:]) + 1
+    else:
+        # 数据极少时的回退策略
+        max_idx = np.argmax(worth)
+
     max_val = worth[max_idx]
     max_time = time_h[max_idx]
 
-    # 标注最大值 (Text 下沉)，仅当最大值点与最小值点不同时标注
+    # 标注最大值 (红色，文字下沉)，仅当它不是最小值时标注
     if max_idx != min_idx:
         ax3.annotate(f'Max: {max_val:.0f}\nT={max_time:.1f}h', 
                      xy=(max_time, max_val), 
@@ -351,7 +375,6 @@ def main():
             )
             st.pyplot(fig1)
 
-            # --- 动态物理解释逻辑---
             st.markdown("### 💡 物理现象深度解析")
             
             if "启动" in scenario:
@@ -373,7 +396,7 @@ def main():
             elif "台阶" in scenario:
                 st.info(r"""
                 **工况：功率台阶变化 (Step Change)**
-                1.  **降功率**：通量减少导致 Xe 的“燃烧”能力减少，而 I-135 的存量仍处于高位。生成 > 消耗，导致 Xe 浓度暂时上升（**负反应性引入**）。
+                1.  **降功率**：通量减少导致 Xe 的“燃烧”能力减小，而 I-135 的存量仍处于高位。生成 > 消耗，导致 Xe 浓度暂时上升（**负反应性引入**）。
                 2.  **升功率**：通量增加导致 Xe 被剧烈“燃烧”。消耗 > 生成，导致 Xe 浓度急剧下降（**正反应性引入**），需防范瞬态超调。
                 """)
             
@@ -394,7 +417,6 @@ def main():
             )
             st.pyplot(fig2)
 
-            # --- 动态物理解释逻辑 (已修复：使用 r"" 原生字符串) ---
             st.markdown("### 💡 物理现象深度解析")
             
             if "启动" in scenario:
@@ -422,6 +444,7 @@ def main():
             
             else:
                 st.info("自定义模式分析：注意观察 Sm-149 作为【稳定毒物】的积分积累特性。")
+
         # ==================================
         # Tab 3: 原始数据
         # ==================================
